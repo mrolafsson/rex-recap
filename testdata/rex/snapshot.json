@@ -1,0 +1,176 @@
+{
+  "blocks": [
+    {
+      "block_id": "block:01a1c21c-9652-7445-b019-007bf1e13598",
+      "focused": false,
+      "label": "shell",
+      "layer": "tiled",
+      "process": {
+        "child": {
+          "argv0": "-bash",
+          "cwd": "/home/me/src/app",
+          "invoked_path": "/bin/bash",
+          "name": "bash",
+          "path": "/usr/bin/bash",
+          "pid": 111259,
+          "user": "me",
+          "user_id": 1000
+        },
+        "foreground": {
+          "argv0": "-bash",
+          "cwd": "/home/me/src/app",
+          "invoked_path": "/bin/bash",
+          "name": "bash",
+          "path": "/usr/bin/bash",
+          "pid": 111259,
+          "user": "me",
+          "user_id": 1000
+        },
+        "home": "/home/me"
+      },
+      "session_id": "session:01a1c21c-9652-7379-9f00-b1a2a8429d81",
+      "status": {
+        "records": {}
+      },
+      "title": {
+        "owner": {
+          "name": "bash",
+          "pid": 111259
+        },
+        "title": "me@box: /home/me/src/app"
+      },
+      "window_id": "window:01a1c21c-9654-7929-a3b6-12638615aad4",
+      "window_label": "Window 8615aad4"
+    },
+    {
+      "block_id": "block:01a1c21c-9670-712f-bf32-4953cbc6cacc",
+      "focused": true,
+      "label": "agent",
+      "layer": "tiled",
+      "process": {
+        "child": {
+          "argv0": "claude",
+          "cwd": "/home/me/src/app",
+          "invoked_path": "/home/me/.local/bin/claude",
+          "name": "2.1.321",
+          "path": "/home/me/.local/share/claude/versions/2.1.321",
+          "pid": 111335,
+          "user": "me",
+          "user_id": 1000
+        },
+        "foreground": {
+          "argv0": "claude",
+          "cwd": "/home/me/src/app",
+          "invoked_path": "/home/me/.local/bin/claude",
+          "name": "2.1.321",
+          "path": "/home/me/.local/share/claude/versions/2.1.321",
+          "pid": 111335,
+          "user": "me",
+          "user_id": 1000
+        },
+        "home": "/home/me"
+      },
+      "session_id": "session:01a1c21c-9652-7379-9f00-b1a2a8429d81",
+      "status": {
+        "records": [
+          {
+            "app": "claude-code",
+            "effective_app": "claude-code",
+            "kind": "question",
+            "msg": "answer: Do you prefer tea or coffee? (Tea · Coffee)",
+            "owner": {
+              "name": "2.1.321",
+              "pid": 111335
+            },
+            "state": "blocked",
+            "updated_at": "2026-11-09T22:00:18.549595694+01:00"
+          }
+        ]
+      },
+      "title": {
+        "owner": {
+          "name": "2.1.321",
+          "pid": 111335
+        },
+        "title": "Tea or coffee preference question"
+      },
+      "window_id": "window:01a1c21c-9672-7967-aa4e-107ed429cea9",
+      "window_label": "Window d429cea9"
+    },
+    {
+      "block_id": "block:01a1c21c-968e-7205-9861-8dc5c623dea6",
+      "focused": false,
+      "label": "rex-recap",
+      "layer": "tiled",
+      "process": {
+        "child": {
+          "argv0": "sleep",
+          "cwd": "/home/me/projects/rex/plugins/rex-recap",
+          "invoked_path": "/usr/bin/sleep",
+          "name": "sleep",
+          "path": "/usr/lib/cargo/bin/coreutils/sleep",
+          "pid": 111379,
+          "user": "me",
+          "user_id": 1000
+        },
+        "foreground": {
+          "argv0": "sleep",
+          "cwd": "/home/me/projects/rex/plugins/rex-recap",
+          "invoked_path": "/usr/bin/sleep",
+          "name": "sleep",
+          "path": "/usr/lib/cargo/bin/coreutils/sleep",
+          "pid": 111379,
+          "user": "me",
+          "user_id": 1000
+        },
+        "home": "/home/me"
+      },
+      "session_id": "session:01a1c21c-9652-7379-9f00-b1a2a8429d81",
+      "status": {
+        "records": {}
+      },
+      "title": {
+        "title": ""
+      },
+      "window_id": "window:01a1c21c-968f-7eb5-8c2a-ee1b5d0184ac",
+      "window_label": "Window 5d0184ac"
+    },
+    {
+      "block_id": "block:popup",
+      "focused": false,
+      "label": "rex-recap",
+      "layer": "floating",
+      "process": {
+        "child": {
+          "argv0": "env",
+          "invoked_path": "/usr/bin/env",
+          "name": "rex-recap",
+          "pid": 4242,
+          "cwd": "/home/me"
+        },
+        "foreground": {
+          "argv0": "/home/me/.local/bin/rex-recap",
+          "invoked_path": "/home/me/.local/bin/rex-recap",
+          "name": "rex-recap",
+          "pid": 4242,
+          "cwd": "/home/me"
+        }
+      },
+      "session_id": "session:01a1c21c-9652-7379-9f00-b1a2a8429d81",
+      "status": {
+        "records": {}
+      },
+      "title": {
+        "title": "rex-recap"
+      },
+      "window_id": "window:01a1c21c-9672-7967-aa4e-107ed429cea9",
+      "window_label": "Window 2"
+    }
+  ],
+  "sessions": [
+    {
+      "label": "fixture",
+      "session_id": "session:01a1c21c-9652-7379-9f00-b1a2a8429d81"
+    }
+  ]
+}

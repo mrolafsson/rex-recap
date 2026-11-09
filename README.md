@@ -1,313 +1,108 @@
-# herdr-recap
+# rex-recap
 
 **Come back to a bunch of agents and know in seconds which ones need you.**
 
 Starting a new agent is almost too easy. Coming back to a dozen or more and
-remembering what each one was doing is the pain. herdr-recap tells you, per
-agent, where it got to and whose move it is: in the
-[Herdr app](https://herdr.dev), across every machine it's connected to, and
-in the [herdr](https://herdr.dev) TUI. One install, the same recaps in both.
+remembering what each one was doing is the pain. rex-recap tells you, per
+agent, where it got to and whose move it is, in a floating pane in
+[Rex](https://www.superlogical.com/rex).
 
-![Recap in the Herdr app, on the demo's agents: one that needs you, with its question and a Reply, one done with a better title suggested, and two working, each with its machine, branch, changes, tasks and Linear issue](app/preview.png)
+It's [herdr-recap](https://github.com/mrolafsson/herdr-recap), the same
+program, with Rex as its host instead of herdr.
 
-*In the Herdr app.*
-
-![The popup in the herdr TUI, on the demo's agents, grouped by stage under tabs: one that needs you, one done, one idle, two working, one in review, one that just woke and one snoozed](docs/images/agents.png)
-
-*In the herdr TUI.*
-
-- **Recaps are written while you're away.** Claude Code's own `/recap`, or
-  the agent's equivalent, run in a throwaway fork, so your agent's
-  conversation doesn't get touched.
+- **Recaps are written while you're away.** Claude Code's own `/recap` runs
+  in a throwaway fork, so your agent's conversation isn't touched.
 - **Only when it's worth it.** A recap is written once an agent has sat
   finished or blocked for a few minutes without you looking, while its
   prompt cache is still warm.
-- **Grouped by whose move it is.** Needs you, Done, Needs fixing, Idle,
-  Working, In review and Merged, shown as tabs with counts; then Snoozed,
-  with herdr-snooze (TUI).
-- **See what a blocked agent wants.** The pending question or command is
-  right on the row.
-- **Reply without leaving the popup.** Tab, type, enter; or enter or click
-  to jump straight to the agent.
-- **Full context at a glance.** Each row has the branch, uncommitted and
-  unpushed work, task progress, PR state, and how long it has been waiting.
-- **Type to filter** across titles, recaps, branches, stages and workspaces.
-- **Search built in** (TUI). When no row matches, the agents' conversations are
-  searched for what you typed, so you find the agent that said it. Uses
-  Memex to put the best match first, if it's installed.
-- **Want better titles?** Agents with no title, or a slug for one, get a
-  suggested name with their ticket key, applied with one keypress; or name
-  them yourself.
-- **Pull requests and Linear issues are links**, with herdr-github and
-  herdr-linear installed.
-- **How the machine's doing** (TUI), beside the tabs: its CPU and memory,
-  with herdr-vitals installed.
-- **It fits in.** Follows the app's or herdr's theme, works with the mouse.
-- **Works with Claude Code**, and in the TUI with Codex, OpenCode and
-  Hermes too (the last two through Memex). Linux and macOS.
+- **Grouped by whose move it is.** Needs you, Done, Idle and Working, as tabs
+  with counts.
+- **See what a blocked agent wants.** The pending question is right on the
+  row.
+- **Reply without leaving the list.** `tab`, type, `enter`. Or `enter` to jump
+  to the agent.
+- **Context at a glance.** Each row has the branch, uncommitted and unpushed
+  work, task progress, and how long it has been waiting.
+- **Type to filter** across titles, recaps, branches and sessions. When no
+  row matches, the conversations are searched for what you typed.
+- **Better titles.** Agents with no title get a suggested one, applied with
+  one key.
+
+Rex's own Activity view shows which agents are working or waiting. rex-recap
+adds what they were doing, what they're asking, and a way to answer.
+
+**Contents:** [Install](#install) · [Use](#use) · [Keys](#keys) ·
+[When recaps are written](#when-recaps-are-written) ·
+[What it costs](#what-it-costs) · [Configuration](#configuration) ·
+[Privacy](#privacy) · [How it works](#how-it-works) ·
+[Limits](#limits) · [Development](#development)
 
 ## Install
 
-### In the Herdr app
+There are two parts: the `rex-recap` binary, on the machine your Rex server
+runs on, and a small Lua module for your Rex config.
 
-Ask the agent in your Herdr window to *add the mod at
-github.com/mrolafsson/herdr-recap/tree/main/app*: it follows the app's own
-steps (it reads the mod, copies it into `mods/`, merges its keys and checks
-it). Or from a terminal:
+**1. Build the binary** (Go 1.26 or later):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/mrolafsson/herdr-recap/main/install.sh | sh -s -- --app
+git clone https://github.com/mrolafsson/rex-recap.git
+cd rex-recap
+go build -o ~/.local/bin/rex-recap .
 ```
 
-That's all: the mod fetches what it needs onto each machine with agents by
-itself (see [In the Herdr app](#in-the-herdr-app)). ⌘R opens it.
+`~/.local/bin` has to be on your login shell's `PATH` (`which rex-recap`).
+If it isn't, set `bin` below to the binary's full path.
 
-### In the herdr TUI
+**2. Link the Lua module** next to your `init.lua`, from inside the clone:
 
 ```sh
-herdr plugin install mrolafsson/herdr-recap
+mkdir -p ~/.config/rex
+ln -s "$PWD/rex/rex-recap.lua" ~/.config/rex/rex-recap.lua
 ```
 
-The build step compiles it with Go if you have it, or downloads the release
-binary for your platform and checks its SHA-256.
+**3. Turn it on.** Add this to `~/.config/rex/init.lua`:
 
-Bind it to a key in `~/.config/herdr/config.toml`:
-
-```toml
-[[keys.command]]
-key = "prefix+alt+r"
-type = "plugin_action"
-command = "herdr-recap.open"
+```lua
+require("rex-recap").setup{ key = "cmd+shift+r" }
 ```
 
-On macOS, `alt` needs Option to send Alt in your terminal (Ghostty:
-`macos-option-as-alt = true`).
-
-Then `herdr server reload-config`, and **start a new herdr client** (detach
-and run `herdr` again): a client that was already open keeps the key
-bindings it started with.
-
-`Recap: demo (fictional agents)` in the command palette shows it on made-up
-agents: no Claude calls, safe to screenshot.
-
-### Both
+then apply it:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/mrolafsson/herdr-recap/main/install.sh | sh
+rex config check && rex config reload
 ```
 
-installs the mod, the plugin, or both, whichever of the app and herdr you
-have.
+Pick any key that's free (`rex keymap` shows what's taken), or leave `key`
+out and use the command palette.
+
+**Updating**, from inside the clone:
+
+```sh
+git pull && go build -o ~/.local/bin/rex-recap .
+```
 
 ### Requirements
 
-- **The Herdr app**, or **herdr 0.9.0** or later.
-- **Claude Code** with `/recap` (2.1.x), signed in. Claude sessions keep their
-  native `/recap` path.
-- Optional, for [other agents](#other-agents): **Codex** for its own recaps
-  (tried with 0.157), **omp** for its own, in the herdr TUI (tried with
-  18.10), and **Memex 0.24.0** or later for OpenCode recaps (tried with
-  0.27.2). Hermes recaps need a Memex that reads Hermes sessions
-  ([nicosuave/memex#220](https://github.com/nicosuave/memex/pull/220)),
-  which 0.27.2 does.
-- **Linux** or **macOS**, on arm64 or x86-64.
+- **Rex**, the Mac app or a Linux server. Tried with the snapshot of
+  9 November 2026.
+- **Claude Code** with `/recap` (2.1.x), signed in. Claude Code reports its
+  status to Rex itself, which is how rex-recap knows what each agent is doing.
+- Optional: **Codex**, for Codex recaps.
+- **Linux** or **macOS**.
 
-## In the Herdr app
+## Use
 
-The Herdr app runs agents on every machine it's connected to, which is
-exactly when coming back to them gets hard: which one is waiting on you,
-on which machine, and what was it doing? Recap puts every one of them in one
-popup (⌘R), the ones that need you first, each with a sentence on where it
-got to and the question it's waiting on. Reply from the popup, or press
-Enter to land in the agent's terminal wherever it runs; nothing to install
-on any machine.
+Press your key, or run **Recap: Toggle** from the command palette. The list
+opens in a floating pane over your tab. Press the key again, or `esc`, to
+close it.
 
-It's a mod: the same recaps, freshness and titles as the TUI's popup, by the
-same herdr-recap, in a popup designed for the app.
+**Recap: Demo** shows the list on made-up agents: try it, or take
+screenshots without showing real work.
 
-![Replying to an agent from the app's Recap: Tab, type, Enter](docs/images/app-reply.png)
+From a shell: `rex do recap_toggle`, or `rex-recap action open` (opens it in
+the session you're in).
 
-**Nothing else to install.** The first time the mod looks at a machine with
-agents, it fetches the herdr-recap release it's part of for that machine
-(macOS or Linux, Intel or ARM), checks it against the release's checksums,
-and keeps it in `~/.local/share/herdr-recap/app/<version>/`, apart from any
-herdr-recap installed for the TUI. Both read and write the same recaps
-(`~/.local/state/herdr/plugins/herdr-recap/recaps/`), so with both installed
-neither pays for a recap the other already wrote.
-
-**Pull requests and Linear issues** show on its cards when herdr-github and
-herdr-linear are where you're signed in: their own app mods (which fetch
-them), or their TUI plugins in `~/.local/bin`. With
-[herdr-github](https://github.com/mrolafsson/herdr-github)'s GitHub mod
-installed, a pull request opens there, on its screen (merge it, open its
-worktree), and `esc` comes back; with
-[herdr-linear](https://github.com/mrolafsson/herdr-linear)'s Linear mod, an
-issue opens there (change its status, start it).
-
-Its keys come from its `keys.json`, merged into the app's:
-
-| Key | Does |
-| --- | --- |
-| ⌘R | open it |
-| typing | filter |
-| `↑` `↓`, `enter`, click | choose an agent; go to it, on whichever machine it runs |
-| `←` / `→` | the stage before / after |
-| `tab` | reply to it: type, `enter` sends, `esc` leaves the reply |
-| `ctrl+r` | rename it to the title suggested under its own; with none suggested, ask for one |
-| `ctrl+x` | ignore the suggested title: it isn't offered again |
-| click on its title, or *rename* | rename it yourself: its title, to edit; `enter` renames once it's between turns |
-| `ctrl+g` / `ctrl+l`, click | open its pull request / Linear issue: in the GitHub / Linear mod when it's installed, else the browser |
-| `esc` | close |
-
-With it open, `herdr-app do recap.demo` shows made-up agents instead, for a
-screenshot, until it closes; the header says so while it does.
-
-The design it's built to, with its icons, type scale and colour roles, is
-[docs/app-design.html](docs/app-design.html).
-
-## Works with the other herdr plugins
-
-This is one of seven plugins that are useful alone and better together.
-Install [herdr-github](https://github.com/mrolafsson/herdr-github), [herdr-linear](https://github.com/mrolafsson/herdr-linear), [herdr-snooze](https://github.com/mrolafsson/herdr-snooze), [herdr-vitals](https://github.com/mrolafsson/herdr-vitals), [herdr-file-transfer](https://github.com/mrolafsson/herdr-file-transfer) or [herdr-teleport](https://github.com/mrolafsson/herdr-teleport) alongside it and they find each other:
-there is nothing to configure.
-
-| Plugin | What it adds to the others |
-| --- | --- |
-| **[herdr-recap](https://github.com/mrolafsson/herdr-recap)** (this one) | Every agent in one list. An agent's pull request and its Linear issue are links there: a click, or `ctrl+g` / `ctrl+l`, opens it in the plugin it belongs to. Snoozed agents have a tab of their own: `ctrl+s` snoozes an agent, in Snooze's popup, and `ctrl+w` wakes one. |
-| [herdr-github](https://github.com/mrolafsson/herdr-github) | Tags every space and agent with its branch's pull request (`#482 ✓ approved`), which Recap shows and groups its agents by. Opens straight on an agent's PR when Recap asks. |
-| [herdr-linear](https://github.com/mrolafsson/herdr-linear) | Tags every space and agent with the Linear issue its branch is named for (`ENG-142 In Progress`), which Recap shows. Opens straight on that issue when Recap asks. |
-| [herdr-snooze](https://github.com/mrolafsson/herdr-snooze) | Hides an agent, or a whole space, from herdr's Agents panel until a time you pick, or until the agent's done or its pull request is merged (from herdr-github's labels). Tags each snoozed agent with when it wakes (`💤 17:30`, `💤 till done`), which Recap shows. Opens straight on an agent when Recap asks, and opens Recap on one with `r`. |
-| [herdr-vitals](https://github.com/mrolafsson/herdr-vitals) | How the machine is doing: right of Recap's tabs, a small graph of its CPU and a gauge of its memory, yellow from 80% and red from 90%, when there's room. A click on it opens Vitals on every machine you work on, and `esc` comes back. |
-| [herdr-file-transfer](https://github.com/mrolafsson/herdr-file-transfer) | Files between the machine you're at and the server herdr runs on. Chooses the files a new Linear issue attaches (`ctrl+f` in herdr-linear's form): any on the server, or one brought over from your Mac, or from an iPad with Taildrop. |
-| [herdr-teleport](https://github.com/mrolafsson/herdr-teleport) | In the Herdr app: moves an agent to another machine, its conversation, branch and uncommitted work with it, and checks it all before the agent stops. `ctrl+t` on an agent in Recap teleports it, and `esc` there comes back. |
-
-- **Auto-discovery.** Each plugin asks herdr which others are installed and
-  enabled. A link only appears when the plugin behind it is there; without
-  it the same text is shown, as text, and its key is left out.
-- **Clickable, and there and back.** herdr shows one popup at a time, so
-  following a link turns the open popup into the other plugin's, in place and
-  without a flicker, and `esc` there brings you back to where you were.
-- **Shared look.** A title, a branch, a pull request and a key are
-  drawn the same in all seven, in herdr's theme colours.
-
-See [With the GitHub, Linear and Snooze plugins](#with-the-github-linear-and-snooze-plugins) for the keys and the convention behind it.
-
-## Why
-
-One agent is a conversation. Five are a job. Each works in its own pane, on
-its own branch, at its own pace, and the state of each lives only in that
-pane's scrollback. While you're in one, the others carry on without you: one
-finishes, one stops to ask permission for a command, one goes down a path
-you'd have stopped.
-
-Then you look away for a meeting or lunch, and come back to a sidebar that
-says *done*, *done*, *working*, *needs you*. It tells you **that** each agent
-moved, not **what** it did, what it's asking, or what's next. So you rebuild
-it one pane at a time: open it, scroll up past the tool output, piece
-together what you'd asked for and what it made of it, and move on to the
-next. Meanwhile the agent that needed a yes has been waiting the whole time,
-behind the ones that didn't.
-
-Keeping all of that in your head is the hard part of running several agents
-at once. herdr-recap keeps it for you: for every agent, a one-line recap of
-where it got to, written while you were away, with the details that decide
-what to look at first.
-
-## In the herdr TUI
-
-### Scan the list
-
-Open it (`prefix+alt+r`) and read down. Each agent is a few lines:
-
-- **Status first, what needs you at the top.** herdr's own glyphs and colours:
-  `◉` needs you, `◔` working, `●` done, `✓` idle. Within a stage, whatever
-  has waited longest comes first, and the right side says for how long:
-  *waiting 2m*, *done 12m*, *working 18m*, *idle 2h*; just *for 3h* when
-  it's idle with a PR in review or merged.
-- **Grouped by where the work has got to.** Each group has a heading and a
-  count, in the order of whose move it is: yours first, then the agent's,
-  then a reviewer's, and last the ones you've snoozed.
-
-  | Stage | Which agents |
-  | --- | --- |
-  | **Needs you** | stopped on a question or an approval |
-  | **Done** | finished a turn you haven't looked at |
-  | **Needs fixing** | idle, its PR failing its checks, in conflict or with changes requested |
-  | **Idle** | idle, with no PR out for review (none yet, or a draft): waiting for you to set it going |
-  | **Working** | at work |
-  | **In review** | idle, its PR open with nothing wrong with it |
-  | **Merged** | idle, its PR merged or closed and nothing new in its worktree |
-  | **Just woke** | woken by [herdr-snooze](https://github.com/mrolafsson/herdr-snooze) by itself lately, and not yet looked at: a tab, not a stage (in All it's under its own) |
-  | **Snoozed** | hidden by [herdr-snooze](https://github.com/mrolafsson/herdr-snooze) until a time, whatever it's doing |
-
-  What an agent is doing right now wins over its PR: start one on the next
-  thing after a merge and it's *Working*, and between turns *Idle* once it
-  has edited or committed something, or moved to a new branch. The PR
-  stages need [herdr-github](https://github.com/mrolafsson/herdr-github)'s
-  tokens; without it, idle agents are all *Idle*.
-- **The stages are tabs along the top.** *All*, then each stage that has
-  agents, in its colour with its count. `←` / `→` or a click shows one
-  stage's agents alone; `esc` goes back to *All*. A stage's name filters
-  too: type `merged` for the agents you could close.
-- **What it's waiting for.** An agent stopped on a question or an approval
-  shows it in red: the question, or the command or edit it wants to run.
-- **Where it got to.** Claude Code's own recap of the session: the goal, the
-  current step, the next one. The same summary Claude shows when you come
-  back to a session, for every session at once.
-- **The state of its work.** Its branch; uncommitted and unpushed changes
-  (*6 files +214 −58 ↑2*); its task list (*4/7 tasks*); and whatever the
-  pane's other plugins report, such as its PR from herdr-github.
-- **The selected agent's** last prompt, model, and permission mode (when
-  it isn't the default) are on the line above the footer, so moving down the
-  list doesn't reflow it.
-
-`enter` (or a click) goes to the agent. Recaps are written ahead of time, so
-the list is complete the moment it opens.
-
-**Type to filter.** Every word must match somewhere in the row: its title,
-status, space, branch, recap, what it's waiting for or a token. So `billing`
-finds the agents on billing, `needs you` the ones stopped on a question, and
-`dark working` the one still working on dark mode.
-
-**When no row matches, the conversations are searched.** You remember
-something an agent said, or that you asked it, but not which agent: type it,
-and if nothing in the list has it, Recap looks through every agent's
-conversation and lists the ones where it came up, with what was said there
-in place of the recap. Every word has to be somewhere in the conversation.
-It's what you and the agent said that is searched, not what its tools read
-or printed, or every agent that opened a file would match that file's
-words. It takes three letters or more, and a moment's pause in the typing.
-
-![An agent found by a word from its conversation that no row has, with what was said there in place of its recap](docs/images/search.png)
-
-With [Memex](https://github.com/nicosuave/memex) installed, the agents it's
-found in are listed best match first, by the score Memex's search gives each
-conversation, rather than by stage. Nothing to set up: Recap finds Memex by
-itself. Who is listed is still decided by reading the conversations, which
-have what was said a moment ago; Memex's index may be a little behind.
-
-### Reply from the list
-
-Most of what an agent needs from you is short: *yes, go ahead*, *push it*,
-*try the other approach*. Press `tab` on it, type, and `enter` sends it, as if
-you'd typed it in its pane. The popup stays open, so you can go down the list
-answering each in turn.
-
-![Replying to an agent from the list](docs/images/reply.png)
-
-Replies can run to several lines (`alt+enter` or `ctrl+j` for a new one, or
-paste). An agent stopped on a question or an approval can't take a typed
-reply, so for those the popup says so, and `enter` takes you to answer it
-there.
-
-**Contents:** [Requirements](#requirements) · [Install](#install) ·
-[Keys](#keys) · [Other agents](#other-agents) ·
-[When recaps are written](#when-recaps-are-written) ·
-[What it costs](#what-it-costs) · [Configuration](#configuration) ·
-[Privacy](#privacy) · [Troubleshooting](#troubleshooting) ·
-[How it works](#how-it-works) · [Development](#development)
-
-### Keys
+## Keys
 
 | Key | Does |
 | --- | --- |
@@ -318,409 +113,136 @@ there.
 | `tab` | reply to that agent: type, then `enter` to send, `esc` to drop it; `alt+enter` or `ctrl+j` for a new line |
 | `ctrl+r` | rename that agent to the title suggested under its own; with none suggested, ask for one |
 | `ctrl+x` | ignore the suggested title: it isn't offered again |
-| `ctrl+g`, click on the PR | open that agent's pull request in the GitHub plugin's popup; `esc` there comes back here |
-| `ctrl+l`, click on the issue | open that agent's Linear issue in the Linear plugin's popup; `esc` there comes back here |
-| `ctrl+s` | snooze that agent in the Snooze plugin's popup (a snoozed one, for a new time); `esc` there comes back here |
-| `ctrl+w` | on a snoozed agent, wake it now, no popup; anywhere else it deletes a word of the filter |
-| `←` / `→` | the stage before / after, round the ends; a click on a tab shows it |
+| `←` / `→` | the stage before / after |
 | `esc` | clear the filter, then back to *All*, then close |
 
-The keys along the bottom are pills, and buttons: the one under the pointer
-underlines, and a click presses it.
-
-A recap written before the agent carried on says how old it is (*recap from
-20m ago*) and is drawn dimmer until it's rewritten, which opening the popup
-does straight away.
-
-## Better titles
-
-An agent whose title is poor gets a better one suggested with its recap, on
-the line under the title, with *Rename · Ignore* after it:
-
-![Two agents with a better title suggested under their own, one being renamed once it's done working, and two already renamed, their ticket's key first](docs/images/titles.png)
-
-A title is poor when there isn't one (*Claude Code*), when it's a slug (what
-`/rename` makes up: `fix-missing-share-notify`), or when it leaves
-out the ticket its branch is for (`…-hal-1921-…`). The suggestion comes from
-the same fork of the conversation as the recap, so it knows the work and its
-ticket; it's asked for once per session and kept from recap to recap.
-
-*Rename* (a click, or `ctrl+r`) types `/rename` and the title into the
-agent, so it's Claude's own name for the session: in the terminal's title,
-herdr's sidebar and `claude --resume`. The row says *Renaming to …* until the
-agent's title shows it. An agent that's working or asking you something is
-renamed once it's done, whether or not the popup is still open. *Ignore* (a click, or `ctrl+x`) drops the suggestion
-for good.
-
-The agent's space is renamed with it, as `prefix+W` would, when the agent is
-the only one in it and the space's name is only a stand-in: its folder's, its
-repo's, its branch's, or the agent's old title. The line says so: *→ HAL-1921
-Offline Edits Survive a Conflict (and its space)*. A space you named yourself,
-or one shared with other agents, keeps its name.
-
-On a row with nothing suggested, `ctrl+r` asks for a title there and then,
-for you to take or ignore. A long-idle agent's conversation is no longer in
-the prompt cache, so that costs several times what it does alongside a recap.
-
-A rename doesn't put a recap out of date: only something said in the
-conversation does.
-
-## With the GitHub, Linear and Snooze plugins
-
-Recap finds [herdr-github](https://github.com/mrolafsson/herdr-github),
-[herdr-linear](https://github.com/mrolafsson/herdr-linear) and
-[herdr-snooze](https://github.com/mrolafsson/herdr-snooze) by itself when
-they're installed and enabled: nothing to set up.
-
-- **A pull request** (`#431 ✓ approved`, from herdr-github's labels) is
-  underlined. A click on it, or `ctrl+g`, opens it in the GitHub popup.
-- **A Linear issue** (`ENG-142 In Progress`, from herdr-linear's labels: the
-  issue the agent's branch is named for) is underlined. A click on it, or
-  `ctrl+l`, opens it in the Linear popup.
-- **A snoozed agent** (hidden from herdr's Agents panel by herdr-snooze) is
-  listed under *Snoozed*, the last tab, whatever it's doing: you've said it
-  can wait. The right of its row says when it wakes (*until 17:30*), or
-  what it's waiting for (*till done*, *till merged*), in snooze's colour.
-  One that Snooze woke by itself lately says so on its row (*woke 16:32 ·
-  it's done*), and is listed under *⏰ Just woke*, a tab beside Snoozed,
-  until you've been to it.
-  `ctrl+s` opens the Snooze popup on the selected agent, to snooze it (a
-  snoozed one, for a new time); once it's done, Recap is back on the same
-  agent. `ctrl+w` on a snoozed agent wakes it there and then, no
-  popup: it's back in its own tab, and in herdr's Agents panel.
-
-herdr shows one popup at a time, so the popup that's open becomes the other
-plugin's, in place (it keeps Recap's size and title), and `esc` there brings
-Recap back on the agent you left. Without those plugins
-the same text is there, as text, and there's no `ctrl+s` or `ctrl+w`.
-
-The convention is small, and any plugin can use it. A popup is opened with
-`HERDR_POPUP_RETURN` in its environment: the popup to open again when it's
-closed, as JSON in the shape of herdr's `plugin.pane.open`
-(`{"plugin_id", "entrypoint", "width", "height", "env"}`). Recap opens on a
-pane when `HERDR_RECAP_PANE` names one, and Snooze when `HERDR_SNOOZE_PANE`
-does.
-
-## Other agents
-
-Claude, Codex and omp agents are recapped, each in a fork of its own
-conversation that isn't kept. `agents` in `config.json` says otherwise:
-fewer, or more.
-
-```json
-{ "agents": ["claude", "codex", "omp", "opencode"] }
-```
-
-**Codex** recaps itself, as Claude does: `codex exec fork --ephemeral` forks
-the pane's session without saving anything and answers in it, read-only. So
-the conversation goes nowhere it hadn't been, it reads from the session's
-own prompt cache, and it needs nothing installed but Codex. The session is
-found from the pane's Codex process, which keeps its session file open; no
-herdr integration for Codex is needed.
-
-**omp** recaps itself too, as Codex does, once herdr's omp integration is
-installed (`herdr integration install omp`): it reports the pane's session
-file, so nothing has to be hunted for, and `omp --fork <session> -p` forks
-it for one answer, in the shape of omp's own idle recap. omp has no fork
-that saves nothing, so the fork is written into a session directory of the
-plugin's own and removed once the recap is taken. It runs bare — no tools,
-extensions, skills or rules, and no MCP servers (omp has no `--no-mcp`, so
-discovery is turned off with a `--config` overlay) — and without herdr's or
-the terminal's environment, so it reports to nothing and leaves no
-`--continue` breadcrumb. Without that integration an omp pane has no
-session for herdr to report, and isn't recapped.
-
-**OpenCode** and **Hermes** are recapped through
-[Memex](https://github.com/nicosuave/memex), which reads their sessions.
-That takes the conversation out of the agent that had it: Memex reads the
-end of it, and the user and assistant text goes to a summarizer, by default
-Claude Code (`haiku`) under the account of the agent's pane, with no prompt
-cache to reuse. Without Claude Code, set `summarizer` to a command of your
-own: it gets the prompt on stdin and prints the recap. Memex has to have indexed the session, and herdr has to
-know its ID (its integration for that agent, `herdr integration install`); a
-row whose session Memex hasn't indexed yet says so, and is looked up again
-while the popup is open.
-
-OpenCode and Hermes are yours to add, since the conversation leaves the
-agent that had it. Codex and omp recap themselves, in a fork of their own
-conversation that goes nowhere it hadn't been, against your own plan or key
-for that agent; both are on by default, and `"agents": ["claude"]` turns
-them off. An agent that isn't in the list says *Recaps aren't available for
-this agent.*
-
-[Better titles](#better-titles) are for Claude and Codex agents: Codex is
-asked for one in a fork too, and renamed with its own `/rename`. Its
-terminal title is the session's name and its folder (*Fix the Login Bug |
-my-repo*); the name is what's judged and replaced. omp names its own
-sessions, so none is suggested for it.
+An agent stopped on a question can't take a typed reply, so for those
+`enter` takes you to answer it there.
 
 ## When recaps are written
 
-Soon after a turn ends. When an agent that's recapped (Claude, and any
-[others](#other-agents) you've named) finishes (done) or stops to ask you
-something (blocked), herdr tells the plugin, which waits
-`recap_after_seconds` (3 minutes). If by then you still haven't looked at the
-agent, its recap is written; if you have (done turns to idle) or you answered
-it, nothing is spent. So the agents you're working with cost nothing, and the
-ones you walked away from are recapped by the time you're back.
+Soon after a turn ends. When an agent finishes (done) or stops to ask you
+something (blocked), rex-recap waits `recap_after_seconds` (3 minutes). If by
+then you still haven't looked at it, its recap is written. If you have, or
+you answered it, nothing is spent.
 
-Opening the popup also rewrites any recap that no longer matches its
-conversation, for example an agent that has carried on working, a few at a
-time, in the background. The rows show what's already there meanwhile.
+"Looked at" means you focused its pane. Rex keeps a finished agent's status
+at done until it starts again, so rex-recap notes when each pane is focused,
+and treats a done agent you've focused since it finished as idle.
+
+Opening the list also rewrites any recap that no longer matches its
+conversation (an agent that has carried on working, say), a few at a time.
+
+All of this is done by a small background process, `rex-recap watch`, which
+follows Rex's events. The list starts it when it isn't running, so recaps
+are written from the first time you open it. To have it running from login,
+start `rex-recap watch` with launchd or a systemd user service. Only one runs
+at a time.
 
 ## What it costs
 
-Native Claude recaps are one short Claude request on the agent's own
-conversation, billed like any other (or counted against your plan). Written
-soon after the turn, they reuse that session's prompt cache: in testing, about
-2¢ at list price on a ~70k-token conversation, and a few cents on bigger ones.
-Once the cache has expired (5 minutes by default, an hour on some plans), the
-whole conversation is read again. Keep `recap_after_seconds` under your cache's
-lifetime when that reuse matters.
+A Claude recap is one short Claude request on the agent's own conversation,
+billed like any other (or counted against your plan). Written soon after the
+turn, it reuses that session's prompt cache: about 2¢ at list price on a
+~70k-token conversation in testing. At most one recap per agent each time you
+walk away from it.
 
-A Codex recap is one short Codex request on its own conversation, against
-your Codex plan or key; in testing a fork read four fifths of a 56k-token
-session from its cache.
-
-An omp recap is one short omp request on its own conversation, against your
-omp plan or key, in a fork that inherits the session's prompt cache as
-Codex's does.
-
-OpenCode and Hermes recaps do not reuse the agent's session cache.
-Memex reads a bounded recent transcript, then the configured summarizer handles
-it as a fresh bounded request. Two large examples measured with Claude's
-default model cost about $0.27-$0.29 each; the summarizer now defaults to
-`haiku`, which hasn't been measured here and should cost a good deal less.
-Cost varies with transcript length, model, provider, plan, and custom
-`summarizer` configuration.
-
-At most one recap per agent each time you walk away from it: an agent
-sitting in done starts no new turns.
-
-Everything else on a row (the waiting question, tasks, branch, changes) is
-read from files and git on your machine, and costs nothing.
+Everything else on a row is read from files and git on your machine, and
+costs nothing. herdr-recap's README has
+[the detail](https://github.com/mrolafsson/herdr-recap#what-it-costs),
+including other agents.
 
 ## Configuration
 
-Optional: `config.json` in the plugin's config directory
-(`~/.config/herdr/plugins/config/herdr-recap/`). See
-[config.example.json](config.example.json).
+Optional: `~/.config/rex-recap/config.json` (`$XDG_CONFIG_HOME/rex-recap`).
+The settings are herdr-recap's; see [config.example.json](config.example.json).
 
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `recap_after_seconds` | `180` | How long an agent waits on you, unlooked at, before its recap is written |
-| `language` | `""` (agent's default) | Language requested for recaps and suggested titles, as a name or locale such as `"Japanese"` or `"zh-CN"`; does not translate the interface |
-| `claude` | the agent's own | Claude Code binary for native Claude recaps and the default non-Claude summarizer |
-| `agents` | `["claude", "codex", "omp"]` | The agents to recap: any of `"claude"`, `"codex"`, `"omp"`, `"opencode"`, `"hermes"` (see [Other agents](#other-agents)) |
-| `codex` | the agent's own | The Codex binary to run Codex recaps with |
-| `memex` | `"memex"` | Memex binary used to resolve and read OpenCode and Hermes sessions |
-| `transcript_max_chars` | `24000` | Maximum recent user/assistant transcript characters sent to the summarizer |
-| `summarizer_model` | `"haiku"` | Model passed to the default Claude print-mode summarizer |
-| `summarizer` | Claude print mode | Optional command argv array, for example `["my-summarizer", "--brief"]`; it reads the prompt on stdin and must print only recap text |
-| `timeout_seconds` | `120` | The longest one whole recap may take, covering the Memex lookup, every transcript page and the summarizer together |
-| `theme` | ask the terminal | `"dark"` or `"light"` background |
-| `tokens` | all | Which pane tokens to show, in order, e.g. `["pr"]`. By default all, with a PR from herdr-github said once: its `prs` (state, checks and the agent's other PRs), or else its `pr`, without the `pr_*` details |
+| `language` | the agent's default | Language for recaps and suggested titles, such as `"Japanese"` or `"zh-CN"` |
+| `claude` | the agent's own | Claude Code binary for recaps |
+| `agents` | `["claude", "codex", "omp"]` | The agents to recap |
+| `timeout_seconds` | `120` | The longest one recap may take |
+| `theme` | ask the terminal | `"dark"` or `"light"` |
 
-### Language
+Options for the Lua module, in `setup{}`:
 
-To request Simplified Chinese recaps and title suggestions, set this in
-`config.json` (alongside any other settings):
-
-```json
-{ "language": "zh-CN" }
-```
-
-A language name such as `"简体中文"` works too. Missing, empty or whitespace-only
-keeps the existing behavior, including Claude's native `/recap`. With a language
-set, Claude receives an explicit goal/current-state/next-action recap request in
-the same unsaved session fork, as a title is asked for, so it still reads the
-agent's prompt cache; its wording may differ from the native command.
-Codex, omp and Memex's default or custom summarizer receive the language
-instruction too. Code, paths, proper names and ticket keys are kept as written.
-
-Close and reopen the popup after changing the setting. Cached recaps in another
-language are then treated as out of date and rewritten, even if the conversation
-hasn't changed. The old recap stays visible meanwhile. Unaccepted title
-suggestions in another language are refreshed too; titles already assigned to
-agents, accepted or dismissed suggestions, and queued renames are left alone.
-The interface labels and text read directly from a conversation are not
-translated.
-
-The Herdr app's mod uses the same backend configuration. Set it on each machine
-that runs agents; changing it on one machine does not change the others.
-
-### Colours
-
-Colours come from herdr's theme: the title in its brightest text, then the
-recap, then the details, each kind in its own colour.
-
-The herdr plugins (herdr-github, herdr-linear, herdr-recap, herdr-snooze)
-draw the same thing the same way, from one shared file (`look.go`):
-
-| what                 | how it's drawn |
-|----------------------|----------------|
-| a title              | the theme's brightest text; bold where it heads a card or a screen |
-| prose                | a step quieter |
-| where, when, who     | dim |
-| a branch             | mauve |
-| a pull request       | its state's colour: draft peach (work in progress), open green, merged mauve, closed red |
-| an agent             | its state's mark and colour, as in herdr's sidebar: `◉` needs you, `◔` working, `●` done, `✓` idle |
-| counts               | yellow; added green, removed red; tasks teal |
-| keys                 | pills along the bottom, coloured by what they do: green goes somewhere, peach changes something, blue changes what you see, grey leaves |
-| a screen's subject   | wears its state as a pill (`Open`, `Draft`, `In Review`) |
-
-**The `terminal` theme.** herdr's `terminal` theme draws with your terminal's
-16 colours, and gives several of these the same one (branches and dim text
-the body's grey). The plugins spread them over the terminal's other colours
-(branches on magenta, dim on bright black), so the list reads the same as on
-a named theme. A colour you set yourself in `[theme.custom]` wins.
-
-**A narrow popup.** When the keys don't fit, their labels shorten first (`^o
-open in Linear` becomes `^o open`), then the keys you'd miss least are left
-out. A key that isn't shown still works.
-
-A pull request's badge from herdr-github (`#482 ✓ approved`, `#476 draft ●`)
-is coloured piece by piece as that plugin colours a PR: the number and its
-state in the state's colour, the checks and the review in theirs.
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `bin` | `"rex-recap"` | The binary, on your login shell's `PATH` or as a full path |
+| `key` | none | A key for Recap: Toggle |
+| `bounds` | `{ 0.1, 0.08, 0.8, 0.8 }` | The floating pane's `{ x, y, w, h }`, as fractions of the window |
 
 ## Privacy
 
-Claude recaps are made by the same Claude Code, account and settings the agent
-uses, on its own conversation, so nothing goes anywhere it hadn't already.
-Codex recaps are made by Codex, the same way, and omp recaps by omp, in a fork
-of the pane's session that omp writes to disk: the plugin gives it a session
-directory of its own and removes it, file and copied artifacts both, once the
-recap is taken. That fork runs with no tools, extensions, skills or rules and
-no MCP servers, and without herdr's environment. OpenCode and Hermes are
-recapped only if you add them to `agents`. Those recaps read a bounded page
-through
-Memex and send only user/assistant text to the configured summarizer, as a
-JSON string in a JSON object the summarizer is told to treat as data, so a
-transcript can't close its own delimiter and give the summarizer instructions.
-A Memex or summarizer process that floods stdout or stderr is killed and the
-recap fails rather than filling memory. The
-default summarizer is a new, non-persistent Claude print-mode request and has
-the usual Claude billing or plan cost. Recaps are kept in
-`~/.local/state/herdr/plugins/herdr-recap/recaps/`, readable only by you.
-
-Searching the conversations (when no row matches the filter) reads Claude's,
-Codex's and omp's transcripts where they are on your disk, and sends nothing
-anywhere. An agent read through Memex is searched in the same recent page a
-recap of it reads.
-
-A native Claude recap is a fork of the conversation that is never saved: the
-agent's own session isn't written to, and it doesn't show up in
-`claude --resume`. It does run with your Claude Code settings, so your own hooks
-(a notification on stop, say) run for it too. A default non-Claude recap is a
-separate print-mode Claude request, also with session persistence disabled,
-run outside the agent's folder so that project's Claude settings and hooks
-don't come into it.
-
-## Troubleshooting
-
-- **`herdr-recap list`** shows, without drawing the popup, each agent, the
-  Claude session it was found to be running, everything read from it
-  (branch, tasks, the pending request, changes) and its cached recap.
-- **`herdr-recap recap w1:p2`** writes one pane's recap now and prints it,
-  with any error in full.
-- **`recap.log`** in the state directory has every recap written in the
-  background, with its cost, and any errors.
-- *The key does nothing*: herdr clients read key bindings when they start, and
-  `reload-config` doesn't reach one that's already open. Start a new client.
-- *It opens somewhere else*: herdr shows one popup at a time, on whichever
-  client counts as active, so with several attached (another terminal, a
-  mosh session) it can open on one you're not looking at. Opening it again
-  closes that one and opens it where you are. If another plugin's popup is
-  in the way, a toast says so: close it first.
-- *It lists only some of my agents*: it shows the herdr it's installed in.
-  Agents on another machine you've connected in herdr's sidebar need the
-  plugin installed there, and appear in that machine's popup.
-- *A tab's icon is a box*: the Snoozed and Just woke tabs carry
-  herdr-snooze's emoji (💤, ⏰), which your terminal draws from an emoji
-  font. Without one (common on a minimal server) they show as a box (□) or
-  a blank. The full tab names still read; in a popup too narrow for them,
-  where a tab is only its icon and count, those two can't be told apart.
-  An emoji font (Noto Color Emoji, `fonts-noto-color-emoji` on Linux) fixes
-  it, or a wider popup.
-- *Couldn't find its conversation*: the plugin reads Claude's process to find
-  its session (its `CLAUDE_CONFIG_DIR` and `sessions/<pid>.json`). A Claude
-  Code too old to write that file, or one running as another user, can't be
-  read.
+Claude recaps are made by the same Claude Code, account and settings the
+agent uses, on its own conversation, so nothing goes anywhere it hadn't
+already. The recap is a fork that's never saved: the agent's session isn't
+written to. Recaps are kept in `~/.local/state/rex-recap/recaps/`, readable
+only by you. Searching the conversations reads transcripts on your disk and
+sends nothing anywhere. More in herdr-recap's
+[Privacy](https://github.com/mrolafsson/herdr-recap#privacy).
 
 ## How it works
 
-The popup reads herdr's agent list every second over its socket, so statuses
-stay live. For each Claude agent it finds the session through the pane's
-`claude` process rather than herdr's reported session ID, which under a
-profile switcher (clauth and the like) can name a different session: the
-process's `CLAUDE_CONFIG_DIR` (from `/proc` on Linux, `ps` on macOS) leads
-to `sessions/<pid>.json`, which names the session and where it was started.
+| herdr-recap gets from herdr | rex-recap gets from Rex |
+| --- | --- |
+| The agent list | Every terminal block in every session, with the status its program reports ([Program Status Protocol](https://www.superlogical.com/rex/docs/build/program-status)), from one `rex do` script |
+| An agent's process | The terminal's `process` method |
+| Status-change hooks | `rex events`, followed by `rex-recap watch` |
+| Done turning idle when you look | Focus changes, noted by the watcher |
+| Workspaces | Sessions |
+| A popup | A floating pane, opened by the Lua module |
+| Go to an agent | `session.focus_block`, once the floating pane has closed |
+| Typing a reply | A bracketed paste and enter, written to the agent's terminal |
 
-For Claude, the rest of a row comes from the end of the session's transcript: the last
-tool call without a result (what a blocked agent is asking), its task list,
-branch, model, mode, your last prompt, and when each happened. Changes come
-from `git status` and `git diff --shortstat` in the agent's folder, read
-again only when its status changes.
+The code is herdr-recap's with a Rex layer: [`host.go`](host.go) picks the
+host, [`rex.go`](rex.go) and [`watch.go`](watch.go) are Rex's side, and
+[`rex/rex-recap.lua`](rex/rex-recap.lua) is the module. herdr is still
+supported (`RECAP_HOST=herdr`), which keeps herdr-recap's changes easy to
+bring over.
 
-A recap runs
+## Limits
 
-```sh
-claude -p --resume <session> --fork-session --no-session-persistence --output-format json /recap
-```
-
-in the session's directory with the agent's `CLAUDE_CONFIG_DIR` and without
-herdr's environment (so herdr's own Claude hooks don't mistake it for an
-agent). It's cached with the transcript's size and time, and counts as
-current until the transcript changes. One recap per session runs at a time:
-another asking for the same one waits and takes its result.
-
-For Codex, the session is the `rollout-…-<id>.jsonl` the pane's Codex process
-has open (`/proc/<pid>/fd` on Linux, `lsof` on macOS), and the recap is
-`codex exec fork <id> --ephemeral -c sandbox_mode="read-only"` with the pane's
-`PATH` and `CODEX_HOME`, run outside the agent's folder. It's cached with the
-session file's size and time, as Claude's is.
-
-For omp, herdr's omp integration reports the pane's session file, which is
-read where it is: the session's id and the directory it was started in are in
-the file's own `{"type":"session"}` record, and a session with nothing said
-yet has no transcript to recap. The recap is
-
-```sh
-omp --fork <session> --session-dir <run> --config <overlay> --no-tools --no-extensions --no-skills --no-rules --no-title --thinking off -p <prompt>
-```
-
-run in the session's directory with the pane's `PATH`. The run's directory,
-holding the fork's file and its copied artifacts, is removed whole once the
-recap is taken, whatever it answered. The request opens by stopping the work,
-because a fork of a pane that is mid-turn can otherwise carry its unfinished
-step on instead of recapping, and an answer that comes back as a tool call
-is refused rather than kept as the recap. It's cached with the transcript's
-size and time, as the others are.
-
-For OpenCode and Hermes, herdr's exact `agent_session.value` and source
-are matched with `memex sessions`. The plugin then reads recent records with a
-bounded `memex session --source-path ... --limit 500 --max-chars ...` request,
-keeps only user and assistant text, and treats that text as untrusted data in
-the summarizer prompt. Lifecycle, system/developer, tool-call, and tool-result
-bodies are excluded. Cache freshness uses Memex's last activity and message
-count instead of the shared database file timestamp.
-
-The `pane.agent_status_changed` hook (`tick`) only reads the agent list and
-starts a detached `recap --after` for an agent now waiting on you, once per
-status change. That process sleeps, checks the agent's status hasn't moved
-since, and writes the recap.
-
-A reply is herdr's `agent.prompt`: the text is pasted into the agent's pane
-and entered, as one prompt.
+- **No links to other plugins.** herdr-recap's GitHub, Linear and Snooze
+  links come from herdr plugins that Rex doesn't have, so the PR and issue
+  on a row, and snoozing, aren't there.
+- **Agents in other Rex hosts** aren't listed yet: only the server
+  rex-recap runs against.
+- **The list is a terminal program in a floating pane**, not part of Rex's
+  own interface. Rex has no way for a plugin to add its own.
+- **An agent sitting on a startup prompt** (Claude's folder-trust question)
+  reports no status, so it shows up once it's past that.
+- **No notifications.** Rex has none for a program to show, so what
+  herdr-recap would say in one (a broken config, say) goes to the
+  watcher's log, `~/.local/state/rex-recap/recap.log`, instead.
 
 ## Development
 
 ```sh
-go test -race ./...
-go run . picker --demo       # the popup on fictional agents, in any terminal
-herdr plugin link .          # try it in herdr
-sh scripts/screenshots.sh    # docs/images from the demo (needs freeze)
+go test ./...
 ```
 
-`themes_herdr.go` is generated from herdr's palettes by
-`scripts/gen-themes.py` (see the script for how).
+The Rex side is tested against a snapshot taken from a real Rex server
+([`testdata/rex/snapshot.json`](testdata/rex/snapshot.json)), with the `rex`
+CLI stood in for. The tests that came with herdr-recap run against herdr.
+
+To try it against a Rex server without the Mac app (Linux, say), start an
+agent in a session and open the list in a block:
+
+```sh
+rex new try
+rex run -s try -- claude
+rex run -s try -- env RECAP_HOST=rex rex-recap picker
+```
+
+To bring over herdr-recap's changes:
+
+```sh
+git fetch upstream && git merge upstream/main
+```
+
+## License
+
+MIT. See [LICENSE](LICENSE).

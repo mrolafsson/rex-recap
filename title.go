@@ -257,6 +257,9 @@ func askRename(paneID, sessionID string) error {
 // promptAgent types text into an agent and enters it; a variable so tests
 // can stand one in.
 var promptAgent = func(paneID, text string) error {
+	if onRex() {
+		return rexPrompt(paneID, text)
+	}
 	return herdrCall("agent.prompt", map[string]any{"target": paneID, "text": text}, nil)
 }
 
@@ -284,6 +287,10 @@ func showTitle(paneID, title string) {
 // reportTitle is herdr's pane.report_metadata, for a title; a variable so
 // tests can stand one in.
 var reportTitle = func(paneID, agent, title string) error {
+	if onRex() {
+		// Rex shows the terminal's own title, which /rename sets.
+		return nil
+	}
 	return herdrCall("pane.report_metadata", map[string]any{
 		"pane_id": paneID, "source": "plugin:herdr-recap", "agent": agent, "title": title,
 	}, nil)

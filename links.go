@@ -47,6 +47,10 @@ func (p popupRef) valid() bool {
 // siblings are the other plugins installed and enabled, each with its
 // popup: the ones a row can link to. A variable so tests can stand one in.
 var siblings = func() map[string]popupRef {
+	if onRex() {
+		// herdr's other plugins (github, linear, snooze) aren't Rex's.
+		return nil
+	}
 	var res struct {
 		Plugins []struct {
 			PluginID string `json:"plugin_id"`

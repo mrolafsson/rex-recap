@@ -71,12 +71,18 @@ func configDir() string {
 	if d := os.Getenv("HERDR_PLUGIN_CONFIG_DIR"); d != "" {
 		return d
 	}
+	if onRex() {
+		return filepath.Join(xdgDir("XDG_CONFIG_HOME", ".config"), rexPopupLabel)
+	}
 	return filepath.Join(xdgDir("XDG_CONFIG_HOME", ".config"), "herdr", "plugins", "config", pluginID())
 }
 
 func stateDir() string {
 	if d := os.Getenv("HERDR_PLUGIN_STATE_DIR"); d != "" {
 		return d
+	}
+	if onRex() {
+		return filepath.Join(xdgDir("XDG_STATE_HOME", ".local/state"), rexPopupLabel)
 	}
 	return filepath.Join(xdgDir("XDG_STATE_HOME", ".local/state"), "herdr", "plugins", pluginID())
 }

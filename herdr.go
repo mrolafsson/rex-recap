@@ -80,6 +80,11 @@ func isHerdrCode(err error, code string) bool {
 }
 
 func notify(title, body string) {
+	if onRex() {
+		// Rex has no notifications for a program to show: the log has it.
+		fmt.Fprintln(os.Stderr, title+":", body)
+		return
+	}
 	_ = herdrCall("notification.show", map[string]any{"title": title, "body": body}, nil)
 }
 
@@ -116,6 +121,9 @@ type agentSession struct {
 }
 
 func listAgents() ([]agentInfo, error) {
+	if onRex() {
+		return rexListAgents()
+	}
 	var res struct {
 		Agents []agentInfo `json:"agents"`
 	}
@@ -138,6 +146,9 @@ type workspaceInfo struct {
 // listWorkspaces is the workspaces in sidebar order, for naming them on the
 // rows and ordering the rows. Without it the rows go unnamed, nothing worse.
 func listWorkspaces() []workspaceInfo {
+	if onRex() {
+		return rexListWorkspaces()
+	}
 	var res struct {
 		Workspaces []workspaceInfo `json:"workspaces"`
 	}
@@ -149,6 +160,9 @@ func listWorkspaces() []workspaceInfo {
 }
 
 func renameWorkspace(workspaceID, label string) error {
+	if onRex() {
+		return rexRenameSession(workspaceID, label)
+	}
 	return herdrCall("workspace.rename", map[string]any{"workspace_id": workspaceID, "label": label}, nil)
 }
 
@@ -161,6 +175,9 @@ type process struct {
 }
 
 func paneProcesses(paneID string) ([]process, error) {
+	if onRex() {
+		return rexProcesses(paneID)
+	}
 	var res struct {
 		ProcessInfo struct {
 			Foreground []process `json:"foreground_processes"`
@@ -171,6 +188,9 @@ func paneProcesses(paneID string) ([]process, error) {
 }
 
 func focusAgent(paneID string) error {
+	if onRex() {
+		return rexFocus(paneID)
+	}
 	return herdrCall("agent.focus", map[string]any{"target": paneID}, nil)
 }
 

@@ -40,6 +40,11 @@ const usage = `herdr-recap — what each of your agents was doing, in herdr
                    it comes with the next sessions
   settle SESSION   the session's suggested title was taken or turned down:
                    don't suggest it again
+
+Under Rex (the default here; RECAP_HOST=herdr for herdr):
+  watch            follow Rex's events and schedule recaps, as herdr's hooks
+                   do; the popup starts one when none is running
+  action open      open the popup in a floating pane, or close it
 `
 
 func main() {
@@ -75,12 +80,19 @@ func run(ctx context.Context, args []string) error {
 		return runAction(args[1])
 	case "picker":
 		demo := os.Getenv("HERDR_RECAP_DEMO") == "1" || (len(args) > 1 && args[1] == "--demo")
+		if onRex() && !demo {
+			ensureWatcher()
+		}
 		if err := runPicker(ctx, cfg, demo); err != nil {
 			return err
 		}
 		return finishSwap()
 	case "tick":
 		return tick(cfg)
+	case "watch":
+		return runWatch(ctx, cfg)
+	case "rex-focus":
+		return runRexFocus(args[1:])
 	case "handoff":
 		if len(args) < 2 {
 			return errors.New("handoff needs a popup")
@@ -109,6 +121,9 @@ func run(ctx context.Context, args []string) error {
 const popupWidth, popupHeight = "80%", "75%"
 
 func runAction(name string) error {
+	if onRex() && (name == "open" || name == "demo") {
+		return rexOpenPopup(name == "demo")
+	}
 	switch name {
 	case "open", "demo":
 		env := map[string]string{}

@@ -23,12 +23,15 @@ func waiting(cfg config, a agentInfo) bool {
 // detached `recap --after` to write its recap later, if you haven't looked by
 // then. An agent with a rename waiting for it to be between turns is given it. A status change is one agent's, so only that agent is considered;
 // with no event (startup, by hand), every agent is.
-func tick(cfg config) error {
+func tick(cfg config) error { return tickPane(cfg, hookPane()) }
+
+// tickPane is tick for one pane's status change, or with only "", for
+// every pane.
+func tickPane(cfg config, only string) error {
 	agents, err := agentsNow()
 	if err != nil {
 		return err
 	}
-	only := hookPane()
 	pruneScheduled()
 	pruneForkRuns()
 	for _, a := range agents {
